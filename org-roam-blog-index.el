@@ -1,5 +1,6 @@
 ;;; org-roam-blog-index.el --- ORB's Index definitions  -*- lexical-binding: t; -*-
 
+(require 'ht)
 (require 'org-roam-blog-utils)
 
 (defvar org-roam-blog--index-root-speclist '(all node query)
@@ -31,8 +32,8 @@
            (org-roam-node-from-id (cadr root-spec)))))
 
 (defun org-roam-blog--slugify-default (string)
-  "Indes slug-builder; defaults to calling `org-roam-blog-utils-slugify'."
-  (funcall #'org-roam-blog-utils-slugify string))
+  "Indes slug-builder; defaults to calling `org-roam-blog-slugify'."
+  (funcall #'org-roam-blog-slugify string))
 
 (cl-defgeneric org-roam-blog--guess-index-title (root-spec)
   "Tries to guess a title for index based on its ROOT-SPEC.")
@@ -60,7 +61,7 @@ they were added; compares `org-timestamp' date field in the
 
 T when NODE1 appears added later than NODE2, or if any of the
 nodes are missing \"ADDED\" property (leaving them in place)."
-  (let ((ds1 (cdr (assoc "ADDED" (org-roam-node-properties node1))))
+  (let ((ds1 (cdr (assoc "ADDED" (org-roam-node-properties node1)))) ;<-variable
         (ds2 (cdr (assoc "ADDED" (org-roam-node-properties node2)))))
     (or (null ds1)
         (null ds2)
@@ -74,8 +75,8 @@ nodes are missing \"ADDED\" property (leaving them in place)."
   (title            nil  :type string)
   (slug             nil  :type string)
 
-  (staging-dir      nil  :type string)
-  (media-dir        nil  :type string)
+  (entry-dir  "entry"  :type string)    ;<-variable
+  (media-dir  "media"  :type string)    ;<-variable
 
   (template         nil  :type string)
   (entry-template   nil  :type string)
@@ -86,10 +87,11 @@ nodes are missing \"ADDED\" property (leaving them in place)."
              :type function)
   (sort-fn   #'org-roam-blog--sort-default
              :type function)
-  (group-by  nil :type integer)
+  (group-by  0 :type integer)
 
-  (context-fn       nil  :type function)
-  (entry-context-fn nil  :type function))
+  (context-fn  #'org-roam-blog--index-context-default
+               :type function)
+  (entry-context-fn nil :type function))
 
 (cl-defun org-roam-blog-index-create (&rest args)
   (condition-case err
@@ -154,11 +156,25 @@ via :ENTRY-OFFSET keyword property."
          (nodes (cl-remove-if-not (lambda (n)
                                     (if filter-fn (funcall filter-fn n) t)) nodes))
          (_ (when sort-fn (setq nodes (seq-sort sort-fn nodes)))))
-    (if (integerp group-by)
-        (if (zerop group-by)
-            (list nodes)
-          (seq-partition nodes group-by))
-      nodes)))
+    (if (zerop group-by)
+        (list nodes)
+      (seq-partition nodes group-by))))
+
+(defun org-roam-blog--index-context-default (index)
+  "Sample constructor of a context for INDEX.
+Set in \"context-fn\" field by default."
+  (let* ((title (org-roam-blog-index-title index))
+         (entry-list (org-roam-blog--index-entry-list index))
+         (page-max (length entry-list)))
+    (loop for page-num from 1
+          for entry-group in entry-list
+          collect (ht ("title" title)
+                      ("slug" slug)
+                      ("entry-dir" entry-dir)
+                      ("media-dir" media-dir)
+                      ("entries" entry-group)
+                      ("page" page-num)
+                      ("page-max" page-max)))))
 
 ;;;; Footer
 

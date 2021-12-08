@@ -78,6 +78,43 @@ Pipes SITE, TEMPLATE and CONTEXT through `org-roam-blog-render'."
     (f-write-text (org-roam-blog-render site template context)
                   'utf-8 staging-path)))
 
+(defsubst org-roam-blog-register-index (site index)
+    "Register INDEX in the index-ht of the SITE,
+using slug of the INDEX as key."
+    (ht-set!
+     (org-roam-blog-site-index-ht site)
+     (org-roam-blog-index-slug index)
+     index))
+
+(defsubst org-roam-blog-site--stage-index (site index)
+  (if (and (org-roam-blog-index-template index)
+           (org-roam-blog-index-context-fn index))
+      (let ((template (org-roam-blog-index-template index))
+            (context (funcall
+                      (org-roam-blog-index-context-fn index)
+                      index))
+            (subdir (org-roam-blog-index-slug index)))
+        (loop for context-group in context
+              do (org-roam-blog-stage
+                  (format "index-%s.html" (ht-get context-group "page")) ;<-variable
+                  site template context-group subdir))
+        ;;FIXME: symlink for the first "index" output?:
+        (org-roam-blog-stage "index.html" site template (car context) subdir)) ;<-variable
+    (block no-index-page-output
+      (when (null (org-roam-blog-index-template index))
+        (message "no template defined for %s"
+                 (org-roam-blog-index-title index)))
+      (when (null (org-roam-blog-index-context-fn index))
+        (message "no context-fn defined for %s"
+                 (org-roam-blog-index-title index))))))
+
+(defsubst org-roam-blog-stage-site (site)
+  "Main staging routine for a SITE."
+  (loop for index in (ht-values (org-roam-blog-site-index-ht site))
+        do (block stage-index
+             (message "staging index %s" (org-roam-blog-index-title index))
+             (org-roam-blog-site--stage-index site index))))
+
 ;;;; Footer
 
 (provide 'org-roam-blog-site)

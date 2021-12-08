@@ -9,7 +9,7 @@
           (nth 3 dt)     ; day
           (nth 5 dt))))  ; year
 
-(defun org-roam-blog-slugify (string)
+(defsubst org-roam-blog-slugify (string)
   "Default slug builder. Sanitizes the STRING using `unidecode'
 package, removes extra hyphens, coerces result to lowercase."
   (downcase
