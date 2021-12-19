@@ -57,12 +57,16 @@ T unless NODE tagged win `noexport'."
   "Default node sorting key for index nodelist construction.
 Intended to leave nodes sorted in descending order w/r to date
 they were added; compares `org-timestamp' date field in the
-\"ADDED\" property record of the nodes.
+property set as `org-roam-blog-default-date-property' record of
+the nodes.
 
 T when NODE1 appears added later than NODE2, or if any of the
-nodes are missing \"ADDED\" property (leaving them in place)."
-  (let ((ds1 (cdr (assoc "ADDED" (org-roam-node-properties node1)))) ;<-variable
-        (ds2 (cdr (assoc "ADDED" (org-roam-node-properties node2)))))
+nodes are missing `org-roam-blog-default-date-property' property
+(leaving them in place)."
+  (let ((ds1 (cdr (assoc org-roam-blog-default-date-property
+                         (org-roam-node-properties node1))))
+        (ds2 (cdr (assoc org-roam-blog-default-date-property
+                         (org-roam-node-properties node2)))))
     (or (null ds1)
         (null ds2)
         (not (calendar-date-compare     ; that thing needs lists of date-lists :/
@@ -75,8 +79,8 @@ nodes are missing \"ADDED\" property (leaving them in place)."
   (title            nil  :type string)
   (slug             nil  :type string)
 
-  (entry-dir  "entry"  :type string)    ;<-variable
-  (media-dir  "media"  :type string)    ;<-variable
+  (entry-dir  org-roam-blog-default-entry-dir-name :type string)
+  (media-dir  org-roam-blog-default-media-dir-name :type string)
 
   (template         nil  :type string)
   (entry-template   nil  :type string)
