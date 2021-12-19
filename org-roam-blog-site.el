@@ -96,20 +96,49 @@ using slug of the INDEX as key."
             (subdir (org-roam-blog-index-slug index)))
         (loop for context-group in context
               do (org-roam-blog-stage
-                  (format "index-%s.html" (ht-get context-group "page")) ;<-variable
+                  (format "%s-%s.html"
+                          org-roam-blog-index-filename-prefix
+                          (ht-get context-group "page"))
                   site template context-group subdir))
         ;;FIXME: symlink for the first "index" output?:
-        (org-roam-blog-stage "index.html" site template (car context) subdir)) ;<-variable
+        (org-roam-blog-stage (format "%s.html" org-roam-blog-index-filename-prefix)
+                             site template (car context) subdir))
     (block no-index-page-output
       (when (null (org-roam-blog-index-template index))
         (message "no template defined for %s"
                  (org-roam-blog-index-title index)))
       (when (null (org-roam-blog-index-context-fn index))
         (message "no context-fn defined for %s"
+                 (org-roam-blog-index-title index)))))
+  ;;FIXME: Only for prototyping: it builds the entry list to conext twice!
+  (if (and (org-roam-blog-index-entry-template index)
+           (org-roam-blog-index-entry-context-fn index))
+      (let ((template (org-roam-blog-index-entry-template index))
+            (entry-context-list (org-roam-blog--build-entry-context-list index))
+            (subdir (concat (org-roam-blog-index-slug index) "/"
+                            (org-roam-blog-index-entry-dir index))))
+        (loop for context in entry-context-list
+              for counter from 1 to (length entry-context-list) ;;FIXME: slug??
+              do (org-roam-blog-stage
+                  (format "%s-%s.html" org-roam-blog-entry-filename-prefix counter)
+                  site template context subdir)))
+    (block no-entry-pages-output
+      (when (null (org-roam-blog-index-entry-template index))
+        (message "no entry-template defined in %s"
+                 (org-roam-blog-index-title index)))
+      (when (null (org-roam-blog-index-entry-context-fn index))
+        (message "no entry-context-fn defined in %s"
                  (org-roam-blog-index-title index))))))
 
 (defsubst org-roam-blog-stage-site (site)
   "Main staging routine for a SITE."
+  ;;FIXME: rsync | recreate index content pages
+  ;; (when (f-exists? (org-roam-blog-site-staging-dir site))
+  ;;   (delete-directory (org-roam-blog-site-staging-dir site)) t)
+  ;; bootstraps the staging directory with default content:
+  (unless (f-exists? (org-roam-blog-site-staging-dir site))
+    (f-copy (org-roam-blog-site-src-root-dir site)
+            (org-roam-blog-site-staging-dir site)))
   (loop for index in (ht-values (org-roam-blog-site-index-ht site))
         do (block stage-index
              (message "staging index %s" (org-roam-blog-index-title index))

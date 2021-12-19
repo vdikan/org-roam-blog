@@ -168,6 +168,9 @@ via :ENTRY-OFFSET keyword property."
   "Sample constructor of a context for INDEX.
 Set in \"context-fn\" field by default."
   (let* ((title (org-roam-blog-index-title index))
+         (slug  (org-roam-blog-index-slug index))
+         (entry-dir  (org-roam-blog-index-entry-dir index))
+         (media-dir  (org-roam-blog-index-media-dir index))
          (entry-list (org-roam-blog--index-entry-list index))
          (page-max (length entry-list)))
     (loop for page-num from 1
@@ -179,6 +182,11 @@ Set in \"context-fn\" field by default."
                       ("entries" entry-group)
                       ("page" page-num)
                       ("page-max" page-max)))))
+
+(defsubst org-roam-blog--build-entry-context-list (index)
+  "Prototype function to get a list of entry contexts for INDEX publishing."
+  (mapcar (org-roam-blog-index-entry-context-fn index)
+          (flatten-list (org-roam-blog--index-entry-list index))))
 
 ;;;; Footer
 

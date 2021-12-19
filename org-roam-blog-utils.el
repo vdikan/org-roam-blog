@@ -19,6 +19,26 @@ package, removes extra hyphens, coerces result to lowercase."
     '(("--+" . "-") ("^-"  . "") ("-$"  . ""))
     (unidecode-sanitize string))))
 
+;; Loads my testing dynamic module:
+(load-rs-module "my_org_dynmod")
+
+;; that priovides `my-org-dynmod/org-to-html'
+
+(defsubst org-roam-blog--org-to-html (s)
+  (funcall #'my-org-dynmod/org-to-html s))
+
+(defsubst org-roam-blog--htmlize-node-content (node)
+  "Get a node content and HTMLize it with preferred engine."
+  (org-roam-blog--org-to-html
+   (with-current-buffer (org-roam-node-find-noselect node t)
+     (when-let ((beg (point))
+                (end (progn (outline-end-of-subtree) (point))))
+       (buffer-substring-no-properties beg end)))))
+
+(defsubst org-roam-blog--drop-main-tag (s)
+  "Remove <main> tag from orgize-produced html."
+  (seq-subseq s 6 (- (length s) 7)))
+
 ;;;; Footer
 
 (provide 'org-roam-blog-utils)
