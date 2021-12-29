@@ -3,6 +3,7 @@
 (require 'mustache)
 (require 'ht)
 (require 'f)
+(require 'simple-httpd)
 (require 'org-roam-blog-utils)
 (require 'org-roam-blog-index)
 
@@ -143,6 +144,12 @@ using slug of the INDEX as key."
         do (block stage-index
              (message "staging index %s" (org-roam-blog-index-title index))
              (org-roam-blog-site--stage-index site index))))
+
+(defsubst org-roam-blog-start-preview (site)
+  "Start `emacs-web-server' instance to serve the SITE staging directory content."
+  (declare (type org-roam-blog-site site))
+  (setq httpd-root (org-roam-blog-site-staging-dir site))
+  (httpd-start))
 
 ;;;; Footer
 
