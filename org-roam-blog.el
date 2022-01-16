@@ -16,7 +16,7 @@
   :type  'string)
 
 
-(defcustom org-roam-blog-default-entry-dir-name "entry"
+(defcustom org-roam-blog-default-entry-dir-name "items"
   "Name of default subdirectory containing entries for an index."
   :group 'org-roam-blog
   :type  'string)
@@ -30,12 +30,6 @@
 
 (defcustom org-roam-blog-index-filename-prefix "index"
   "Name of default filename prefix for an index."
-  :group 'org-roam-blog
-  :type  'string)
-
-
-(defcustom org-roam-blog-entry-filename-prefix "entry"
-  "Name of default filename prefix for an entry."
   :group 'org-roam-blog
   :type  'string)
 

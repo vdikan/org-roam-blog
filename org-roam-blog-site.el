@@ -87,6 +87,16 @@ the output of particular pages/sections of the SITE through calls to
     (f-write-text (org-roam-blog-render site template context)
                   'utf-8 scratch-path)))
 
+(defsubst org-roam-blog-entry-pathname (index context)
+  (let ((fname
+         (funcall (org-roam-blog-index-entry-fname-fn index) context))
+        (subdir
+         (if-let ((index-slug (org-roam-blog-index-slug index))
+                  (entry-dir (org-roam-blog-index-entry-dir index)))
+             (concat index-slug "/" entry-dir)
+           index-slug)))
+    (f-expand fname subdir)))
+
 (defsubst org-roam-blog-register-index (site index)
     "Register INDEX in the index-ht of the SITE,
 using slug of the INDEX as key."
@@ -131,12 +141,16 @@ defined by KWARGS for the specified SITE."
            (org-roam-blog-index-entry-context-fn index))
       (let ((template (org-roam-blog-index-entry-template index))
             (entry-context-list (org-roam-blog--build-entry-context-list index))
-            (subdir (concat (org-roam-blog-index-slug index) "/"
-                            (org-roam-blog-index-entry-dir index))))
+            (subdir  ;;FIXME: ectract this if-let, it reappears in `org-roam-blog-entry-pathname'
+             (if-let ((index-slug (org-roam-blog-index-slug index))
+                      (entry-dir (org-roam-blog-index-entry-dir index)))
+                 (concat index-slug "/" entry-dir)
+               index-slug)))
         (cl-loop for context in entry-context-list
-              for counter from 1 to (length entry-context-list) ;;FIXME: slug??
+              ;;FIXME: capture counters through `org-roam-blog--build-entry-context-list'
+              ;; for counter from 1 to (length entry-context-list)
               do (org-roam-blog-stage
-                  (format "%s-%s.html" org-roam-blog-entry-filename-prefix counter)
+                  (funcall (org-roam-blog-index-entry-fname-fn index) context)
                   site template context subdir)))
     (block no-entry-pages-output
       (when (null (org-roam-blog-index-entry-template index))

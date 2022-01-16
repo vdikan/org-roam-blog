@@ -73,6 +73,17 @@ nodes are missing `org-roam-blog-default-date-property' property
               (list (org-roam-blog-to-calendar-date ds1))
               (list (org-roam-blog-to-calendar-date ds2)))))))
 
+(defun org-roam-blog--entry-context-default (node)
+  "Default NODE to context hash-table processor."
+  (ht ("title" (org-roam-node-title node))
+      ("main"  (org-roam-blog--htmlize-node-content node))))
+
+(defun org-roam-blog--entry-fname-default (context)
+  "Default filename builder for CONTEXT object."
+  (->> (ht-get context "title")
+       (org-roam-blog-slugify)
+       (format "%s.html")))
+
 (cl-defstruct (org-roam-blog-index (:constructor org-roam-blog-index--create)
                                    (:copier nil))
   (root-spec        nil  :type org-roam-blog-index-root-spec-type)
@@ -95,7 +106,10 @@ nodes are missing `org-roam-blog-default-date-property' property
 
   (context-fn  #'org-roam-blog--index-context-default
                :type function)
-  (entry-context-fn nil :type function))
+  (entry-context-fn #'org-roam-blog--entry-context-default
+                    :type function)
+  (entry-fname-fn #'org-roam-blog--entry-fname-default
+                  :type function))
 
 (cl-defun org-roam-blog-index-create (&rest args)
   (condition-case err
@@ -119,36 +133,36 @@ nodes are missing `org-roam-blog-default-date-property' property
      nil)))
 
 (cl-defgeneric org-roam-blog--entry-list-pre-builder (root-spec)
-    "Initial entry list retriever based on the ROOT-SPEC.")
+  "Initial entry list retriever based on the ROOT-SPEC.")
 
-  (cl-defmethod org-roam-blog--entry-list-pre-builder
-    ((root-spec (head all)))
-    "Just returns `org-roam-node-list' function symbol to get all Roam's nodes."
-    #'org-roam-node-list)
+(cl-defmethod org-roam-blog--entry-list-pre-builder
+  ((root-spec (head all)))
+  "Just returns `org-roam-node-list' function symbol to get all Roam's nodes."
+  #'org-roam-node-list)
 
-  (cl-defmethod org-roam-blog--entry-list-pre-builder
-    ((root-spec (head node)))
-    "Returned lambda gets entries' subheadings of the node's heading
+(cl-defmethod org-roam-blog--entry-list-pre-builder
+  ((root-spec (head node)))
+  "Returned lambda gets entries' subheadings of the node's heading
 as Org-Roam nodes (generate and save their Id's when needed).
 The NODE ROOT-SPEC can specify entry heading offset other than 1
 via :ENTRY-OFFSET keyword property."
-    (lambda ()
-      (with-current-buffer
-          (org-roam-node-find-noselect
-           (org-roam-node-from-id (cadr root-spec)) t)
-        (remove-if #'null
-                   (let ((root-level (org-current-level))
-                         (entry-offset (or (getf root-spec :entry-offset) 1)))
-                     (org-map-entries
-                      (lambda ()
-                        (when (= root-level
-                                 (- (org-current-level) entry-offset))
-                          (org-id-get-create)
-                          (when (buffer-modified-p)
-                            (save-buffer)
-                            (org-roam-db-update-file))
-                          (org-roam-node-at-point)))
-                      nil 'tree))))))
+  (lambda ()
+    (with-current-buffer
+        (org-roam-node-find-noselect
+         (org-roam-node-from-id (cadr root-spec)) t)
+      (remove-if #'null
+                 (let ((root-level (org-current-level))
+                       (entry-offset (or (getf root-spec :entry-offset) 1)))
+                   (org-map-entries
+                    (lambda ()
+                      (when (= root-level
+                               (- (org-current-level) entry-offset))
+                        (org-id-get-create)
+                        (when (buffer-modified-p)
+                          (save-buffer)
+                          (org-roam-db-update-file))
+                        (org-roam-node-at-point)))
+                    nil 'tree))))))
 
 (defun org-roam-blog--index-entry-list (index)
   "Return filtered list of Roam entries to be published for INDEX."
