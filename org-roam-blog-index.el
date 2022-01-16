@@ -173,15 +173,15 @@ Set in \"context-fn\" field by default."
          (media-dir  (org-roam-blog-index-media-dir index))
          (entry-list (org-roam-blog--index-entry-list index))
          (page-max (length entry-list)))
-    (loop for page-num from 1
-          for entry-group in entry-list
-          collect (ht ("title" title)
-                      ("slug" slug)
-                      ("entry-dir" entry-dir)
-                      ("media-dir" media-dir)
-                      ("entries" entry-group)
-                      ("page" page-num)
-                      ("page-max" page-max)))))
+    (cl-loop for page-num from 1
+             for entry-group in entry-list
+             collect (ht ("title" title)
+                         ("slug" slug)
+                         ("entry-dir" entry-dir)
+                         ("media-dir" media-dir)
+                         ("entries" entry-group)
+                         ("page" page-num)
+                         ("page-max" page-max)))))
 
 (defsubst org-roam-blog--build-entry-context-list (index)
   "Prototype function to get a list of entry contexts for INDEX publishing."

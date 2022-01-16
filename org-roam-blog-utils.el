@@ -2,6 +2,25 @@
 
 (require 'unidecode)
 
+(defsubst org-roam-blog--substring-from-right (s n)
+  "Retusrns substring of length N from the end of string S."
+  (let* ((end (length s)) (beg (- end n)))
+    (substring s beg end)))
+
+(defsubst fname-with-tslash (fname)
+  "Make sure that FNAME comes with trailing slash."
+  (let ((fname (string-trim fname)))
+    (if (string-equal "/" (org-roam-blog--substring-from-right fname 1))
+        fname
+      (format "%s/" fname))))
+
+(defsubst fname-no-tslash (fname)
+  "Make sure that FNAME comes with trailing slash."
+  (let ((fname (string-trim fname)))
+    (if (string-equal "/" (org-roam-blog--substring-from-right fname 1))
+        (substring fname 0 -1)
+      fname)))
+
 (defsubst org-roam-blog-to-calendar-date (s)
   "Constructs a valid date list for Calendar from Org's datestring S."
   (let ((dt (org-parse-time-string s)))

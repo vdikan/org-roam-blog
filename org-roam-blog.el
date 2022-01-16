@@ -4,6 +4,12 @@
 (require 'org-roam-blog-index)
 (require 'org-roam-blog-site)
 
+(defcustom org-roam-blog-local-sync-command "rsync -a --delete"
+  "Shell command for local folder synchronization during site export."
+  :group 'org-roam-blog
+  :type  'string)
+
+
 (defcustom org-roam-blog-default-date-property "ADDED"
   "Default header property of the Org item headers used for sorting in Indexes."
   :group 'org-roam-blog
