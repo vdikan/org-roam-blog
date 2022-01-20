@@ -1,6 +1,16 @@
 ;;; org-roam-blog-utils.el --- Utility definitions used throughout ORB -*- lexical-binding: t; -*-
 
+(require 'org-roam)
 (require 'unidecode)
+
+(defsubst org-roam-blog--get-node-property (node property)
+  "Get PROPERTY from Roam NODE; 'assocdr'-style shortcut."
+  (declare (type org-roam-node node)
+           (type string property))
+  (--> node
+       (org-roam-node-properties it)
+       (assoc property it)
+       (cdr it)))
 
 (defsubst org-roam-blog--substring-from-right (s n)
   "Retusrns substring of length N from the end of string S."
@@ -46,13 +56,23 @@ package, removes extra hyphens, coerces result to lowercase."
 (defsubst org-roam-blog--org-to-html (s)
   (funcall #'my-org-dynmod/org-to-html s))
 
+(defsubst org-roam-blog--get-node-html-fn (node)
+  "When Roam NODE's html-fn-property is set, return its symbol interned."
+  (declare (type org-roam-node node))
+  (--> node
+       (org-roam-blog--get-node-property
+        it org-roam-blog-html-fn-property)
+       (when it (intern it))))
+
 (defsubst org-roam-blog--htmlize-node-content (node)
   "Get a node content and HTMLize it with preferred engine."
-  (org-roam-blog--org-to-html
-   (with-current-buffer (org-roam-node-find-noselect node t)
-     (when-let ((beg (point))
-                (end (progn (outline-end-of-subtree) (point))))
-       (buffer-substring-no-properties beg end)))))
+  (let ((htmlizer (or (org-roam-blog--get-node-html-fn node)
+                      #'org-roam-blog--org-to-html)))
+    (funcall htmlizer
+             (with-current-buffer (org-roam-node-find-noselect node t)
+               (when-let ((beg (point))
+                          (end (progn (outline-end-of-subtree) (point))))
+                 (buffer-substring-no-properties beg end))))))
 
 (defsubst org-roam-blog--drop-main-tag (s)
   "Remove <main> tag from orgize-produced html."

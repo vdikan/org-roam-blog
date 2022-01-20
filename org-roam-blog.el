@@ -10,6 +10,18 @@
   :type  'string)
 
 
+(defcustom org-roam-blog-html-fn-property "ORB_HTML_FN"
+  "Header property of designating alternative HTMLizer functions."
+  :group 'org-roam-blog
+  :type  'string)
+
+
+(defcustom org-roam-blog-html-src-property "ORB_HTML_SRC"
+  "Header property pointing to an alternative pregenerated HTML markup for a node."
+  :group 'org-roam-blog
+  :type  'string)
+
+
 (defcustom org-roam-blog-default-date-property "ADDED"
   "Default header property of the Org item headers used for sorting in Indexes."
   :group 'org-roam-blog
