@@ -45,6 +45,11 @@
   :group 'org-roam-blog
   :type  'string)
 
+(defcustom org-roam-blog-outline-content-start-regexp ":END:.*\n"
+  "Regex used to find the beginning of node's content."
+  :group 'org-roam-blog
+  :type 'string)
+
 ;;;; Footer
 
 (provide 'org-roam-blog)

@@ -2,6 +2,7 @@
 
 (require 'org-roam)
 (require 'unidecode)
+(require 'f)
 
 (defsubst org-roam-blog--get-node-property (node property)
   "Get PROPERTY from Roam NODE; 'assocdr'-style shortcut."
@@ -11,6 +12,13 @@
        (org-roam-node-properties it)
        (assoc property it)
        (cdr it)))
+
+(defun org-roam-blog--current-dir ()
+  "Get the absolute path of the current directory."
+  (expand-file-name
+   (if load-file-name
+       (file-name-directory load-file-name)
+     default-directory)))
 
 (defsubst org-roam-blog--substring-from-right (s n)
   "Retusrns substring of length N from the end of string S."
@@ -64,15 +72,39 @@ package, removes extra hyphens, coerces result to lowercase."
         it org-roam-blog-html-fn-property)
        (when it (intern it))))
 
+(defun org-roam-blog--content-start ()
+  (if (re-search-forward
+        org-roam-blog-outline-content-start-regexp nil 'move)
+      (forward-char -1)))
+
+(defsubst org-roam-blog--get-node-content (node)
+  "Get textual content of a NODE, for either headline or a file NODE."
+  (with-current-buffer (org-roam-node-find-noselect node t)
+    (let* ((beg (condition-case nil
+                    (progn (outline-back-to-heading) (point))
+                  (error 1)))
+           (end (if (= beg 1)
+                    (point-max)
+                  (progn (outline-end-of-subtree) (point))))
+           (beg (progn
+                  (goto-char beg)
+                  (org-roam-blog--content-start)
+                  (point))))
+        (buffer-substring-no-properties beg end))))
+
 (defsubst org-roam-blog--htmlize-node-content (node)
   "Get a node content and HTMLize it with preferred engine."
   (let ((htmlizer (or (org-roam-blog--get-node-html-fn node)
                       #'org-roam-blog--org-to-html)))
-    (funcall htmlizer
-             (with-current-buffer (org-roam-node-find-noselect node t)
-               (when-let ((beg (point))
-                          (end (progn (outline-end-of-subtree) (point))))
-                 (buffer-substring-no-properties beg end))))))
+    (if-let ((raw-content-filename
+              (org-roam-blog--get-node-property
+               node org-roam-blog-html-src-property)))
+        (with-temp-buffer
+          (insert-file-contents
+           (f-expand raw-content-filename
+                      (f-dirname (org-roam-node-file node))))
+          (buffer-string))
+      (funcall htmlizer (org-roam-blog--get-node-content node)))))
 
 (defsubst org-roam-blog--drop-main-tag (s)
   "Remove <main> tag from orgize-produced html."
