@@ -4,13 +4,31 @@
 (require 'org-roam-blog-index)
 (require 'org-roam-blog-site)
 
+(defcustom org-roam-blog-local-sync-command "rsync -a --delete"
+  "Shell command for local folder synchronization during site export."
+  :group 'org-roam-blog
+  :type  'string)
+
+
+(defcustom org-roam-blog-html-fn-property "ORB_HTML_FN"
+  "Header property of designating alternative HTMLizer functions."
+  :group 'org-roam-blog
+  :type  'string)
+
+
+(defcustom org-roam-blog-html-src-property "ORB_HTML_SRC"
+  "Header property pointing to an alternative pregenerated HTML markup for a node."
+  :group 'org-roam-blog
+  :type  'string)
+
+
 (defcustom org-roam-blog-default-date-property "ADDED"
   "Default header property of the Org item headers used for sorting in Indexes."
   :group 'org-roam-blog
   :type  'string)
 
 
-(defcustom org-roam-blog-default-entry-dir-name "entry"
+(defcustom org-roam-blog-default-entry-dir-name "items"
   "Name of default subdirectory containing entries for an index."
   :group 'org-roam-blog
   :type  'string)
@@ -27,11 +45,10 @@
   :group 'org-roam-blog
   :type  'string)
 
-
-(defcustom org-roam-blog-entry-filename-prefix "entry"
-  "Name of default filename prefix for an entry."
+(defcustom org-roam-blog-outline-content-start-regexp ":END:.*\n"
+  "Regex used to find the beginning of node's content."
   :group 'org-roam-blog
-  :type  'string)
+  :type 'string)
 
 ;;;; Footer
 

@@ -38,6 +38,7 @@ Returns a closure with a signature expected by `mustache-render' for
 (cl-defstruct (org-roam-blog-site (:constructor org-roam-blog-site--create)
                                   (:copier nil))
   (staging-dir        nil          :type string)
+  (scratch-dir        nil          :type string)
   (src-root-dir       nil          :type string)
   (src-template-dir   nil          :type string)
   (index-ht           (ht-create)  :type hash-table)
@@ -69,15 +70,32 @@ content mustache TEMPLATE for a SITE."
            site template context))
 
 (defsubst org-roam-blog-stage (fname site template context &optional subdir)
-  "Output rendered page as FNAME file under `staging-dir' of the SITE.
+  "Output rendered page as FNAME file under `scratch-dir' of the SITE.
 Extend the staging path with SUBDIR when specified.
-Pipes SITE, TEMPLATE and CONTEXT through `org-roam-blog-render'."
+Pipes SITE, TEMPLATE and CONTEXT through `org-roam-blog-render'.
+
+Note that the `scratch-dir' is meant to be (r)sync-ed with the final
+`staging-dir' by the top-level SITE generating routines like e.g.
+`org-roam-blog-stage-site', that will create/process/sync/erase another
+`scratch-dir' (setting it to nil for the processed site). For debugging
+the output of particular pages/sections of the SITE through calls to
+`org-roam-blog-stage', set its `scratch-dir' field manually."
   (let* ((subdir (or subdir ""))
-         (subdir (f-expand subdir (org-roam-blog-site-staging-dir site)))
+         (subdir (f-expand subdir (org-roam-blog-site-scratch-dir site)))
          (_ (f-mkdir subdir))
-         (staging-path (f-expand fname subdir)))
+         (scratch-path (f-expand fname subdir)))
     (f-write-text (org-roam-blog-render site template context)
-                  'utf-8 staging-path)))
+                  'utf-8 scratch-path)))
+
+(defsubst org-roam-blog-entry-pathname (index context)
+  (let ((fname
+         (funcall (org-roam-blog-index-entry-fname-fn index) context))
+        (subdir
+         (if-let ((index-slug (org-roam-blog-index-slug index))
+                  (entry-dir (org-roam-blog-index-entry-dir index)))
+             (concat index-slug "/" entry-dir)
+           index-slug)))
+    (f-expand fname subdir)))
 
 (defsubst org-roam-blog-register-index (site index)
     "Register INDEX in the index-ht of the SITE,
@@ -87,6 +105,13 @@ using slug of the INDEX as key."
      (org-roam-blog-index-slug index)
      index))
 
+(defmacro org-roam-blog-reg (site &rest kwargs)
+  "Shortcut macro for immediate registration of Org Roam Blog index
+defined by KWARGS for the specified SITE."
+  (let ((index (gensym "orb-index-")))
+    `(let ((,index (org-roam-blog-index-create ,@kwargs)))
+       (org-roam-blog-register-index ,site ,index))))
+
 (defsubst org-roam-blog-site--stage-index (site index)
   (if (and (org-roam-blog-index-template index)
            (org-roam-blog-index-context-fn index))
@@ -95,7 +120,7 @@ using slug of the INDEX as key."
                       (org-roam-blog-index-context-fn index)
                       index))
             (subdir (org-roam-blog-index-slug index)))
-        (loop for context-group in context
+        (cl-loop for context-group in context
               do (org-roam-blog-stage
                   (format "%s-%s.html"
                           org-roam-blog-index-filename-prefix
@@ -116,12 +141,16 @@ using slug of the INDEX as key."
            (org-roam-blog-index-entry-context-fn index))
       (let ((template (org-roam-blog-index-entry-template index))
             (entry-context-list (org-roam-blog--build-entry-context-list index))
-            (subdir (concat (org-roam-blog-index-slug index) "/"
-                            (org-roam-blog-index-entry-dir index))))
-        (loop for context in entry-context-list
-              for counter from 1 to (length entry-context-list) ;;FIXME: slug??
+            (subdir  ;;FIXME: ectract this if-let, it reappears in `org-roam-blog-entry-pathname'
+             (if-let ((index-slug (org-roam-blog-index-slug index))
+                      (entry-dir (org-roam-blog-index-entry-dir index)))
+                 (concat index-slug "/" entry-dir)
+               index-slug)))
+        (cl-loop for context in entry-context-list
+              ;;FIXME: capture counters through `org-roam-blog--build-entry-context-list'
+              ;; for counter from 1 to (length entry-context-list)
               do (org-roam-blog-stage
-                  (format "%s-%s.html" org-roam-blog-entry-filename-prefix counter)
+                  (funcall (org-roam-blog-index-entry-fname-fn index) context)
                   site template context subdir)))
     (block no-entry-pages-output
       (when (null (org-roam-blog-index-entry-template index))
@@ -132,18 +161,33 @@ using slug of the INDEX as key."
                  (org-roam-blog-index-title index))))))
 
 (defsubst org-roam-blog-stage-site (site)
-  "Main staging routine for a SITE."
-  ;;FIXME: rsync | recreate index content pages
-  ;; (when (f-exists? (org-roam-blog-site-staging-dir site))
-  ;;   (delete-directory (org-roam-blog-site-staging-dir site)) t)
-  ;; bootstraps the staging directory with default content:
+  "Main staging routine for a SITE. I'm using intermediate scratch temporary
+directory and rsync (default for `org-roam-blog-local-sync-command'), in order
+to also clean up orphans from the final `org-roam-blog-site-staging-dir'."
+  ;; create and prepopulate scratch dir
+  (setf (org-roam-blog-site-scratch-dir site)
+        (make-temp-file "orb-" t))
+  (shell-command
+   (format "%s %s %s"
+           org-roam-blog-local-sync-command
+           (fname-with-tslash (org-roam-blog-site-src-root-dir site))
+           (fname-no-tslash (org-roam-blog-site-scratch-dir site))))
+  ;; output indexes contents for the site
+  (cl-loop for index in (ht-values (org-roam-blog-site-index-ht site))
+           do (block stage-index
+                (message "staging index %s" (org-roam-blog-index-title index))
+                (org-roam-blog-site--stage-index site index)))
+  ;; sync with the staging directory
   (unless (f-exists? (org-roam-blog-site-staging-dir site))
-    (f-copy (org-roam-blog-site-src-root-dir site)
-            (org-roam-blog-site-staging-dir site)))
-  (loop for index in (ht-values (org-roam-blog-site-index-ht site))
-        do (block stage-index
-             (message "staging index %s" (org-roam-blog-index-title index))
-             (org-roam-blog-site--stage-index site index))))
+    (f-mkdir (org-roam-blog-site-staging-dir site)))
+  (shell-command
+   (format "%s %s %s"
+           org-roam-blog-local-sync-command
+           (fname-with-tslash (org-roam-blog-site-scratch-dir site))
+           (fname-no-tslash (org-roam-blog-site-staging-dir site))))
+  ;; erase the intermediate scratch dir
+  (f-delete (org-roam-blog-site-scratch-dir site) t)
+  (setf (org-roam-blog-site-scratch-dir site) nil))
 
 (defsubst org-roam-blog-start-preview (site)
   "Start `emacs-web-server' instance to serve the SITE staging directory content."
