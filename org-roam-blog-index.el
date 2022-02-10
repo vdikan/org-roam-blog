@@ -109,7 +109,8 @@ nodes are missing `org-roam-blog-default-date-property' property
   (entry-context-fn #'org-roam-blog--entry-context-default
                     :type function)
   (entry-fname-fn #'org-roam-blog--entry-fname-default
-                  :type function))
+                  :type function)
+  (leading   t :type boolean))
 
 (cl-defun org-roam-blog-index-create (&rest args)
   (condition-case err
@@ -201,6 +202,24 @@ Set in \"context-fn\" field by default."
   "Prototype function to get a list of entry contexts for INDEX publishing."
   (mapcar (org-roam-blog-index-entry-context-fn index)
           (flatten-list (org-roam-blog--index-entry-list index))))
+
+(defsubst org-roam-blog--subdir-for-index (index)
+  "Return relative subdirectory for entry outputs for the INDEX
+inside the staging directory."
+  (if-let ((index-slug (org-roam-blog-index-slug index))
+           (entry-dir (org-roam-blog-index-entry-dir index)))
+        (concat index-slug "/" entry-dir)
+      index-slug))
+
+(defsubst org-roam-blog--relative-entry-url (node index)
+  "Output relative entry url path for an entry defined by NODE and
+an INDEX, implying that this INDEX is a leading one for the NODE."
+  (let* ((context
+          (funcall (org-roam-blog-index-entry-context-fn index) node))
+         (fname
+          (funcall (org-roam-blog-index-entry-fname-fn index) context))
+         (subdir (org-roam-blog--subdir-for-index index)))
+    (string-trim (concat "/" subdir "/" fname))))
 
 ;;;; Footer
 

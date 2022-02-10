@@ -43,6 +43,7 @@ Returns a closure with a signature expected by `mustache-render' for
   (src-template-dir   nil          :type string)
   (index-ht           (ht-create)  :type hash-table)
   (top-context        (ht-create)  :type hash-table)
+  (entry-registry     (ht-create)  :type hash-table)
   (content-wrap-fn    #'org-roam-blog--content-wrap-default
                       :type function)
   (render-fn          #'org-roam-blog--render-default
@@ -160,6 +161,22 @@ defined by KWARGS for the specified SITE."
         (message "no entry-context-fn defined in %s"
                  (org-roam-blog-index-title index))))))
 
+(defsubst org-roam-blog-site--process-registry (site)
+  "Make all individual entry Id's point to their lead index
+in the SITE's `entry-registry' hash table field."
+  (cl-loop
+   for index in (ht-values (org-roam-blog-site-index-ht site))
+   do (when (org-roam-blog-index-leading index)
+        (block process-registry
+          (message "processing %s into global entry registry"
+                   (org-roam-blog-index-title index))
+          (let ((nodelist
+                 (flatten-list (org-roam-blog--index-entry-list index))))
+            (cl-loop
+             for node in nodelist
+             do (ht-set! (org-roam-blog-site-entry-registry site)
+                         (org-roam-node-id node) index)))))))
+
 (defsubst org-roam-blog-stage-site (site)
   "Main staging routine for a SITE. I'm using intermediate scratch temporary
 directory and rsync (default for `org-roam-blog-local-sync-command'), in order
@@ -172,6 +189,8 @@ to also clean up orphans from the final `org-roam-blog-site-staging-dir'."
            org-roam-blog-local-sync-command
            (fname-with-tslash (org-roam-blog-site-src-root-dir site))
            (fname-no-tslash (org-roam-blog-site-scratch-dir site))))
+  ;; generate global entry registry for the site
+  (org-roam-blog-site--process-registry site)
   ;; output indexes contents for the site
   (cl-loop for index in (ht-values (org-roam-blog-site-index-ht site))
            do (block stage-index
