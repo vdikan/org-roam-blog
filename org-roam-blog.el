@@ -4,6 +4,9 @@
 (require 'org-roam-blog-index)
 (require 'org-roam-blog-site)
 
+(defvar -orb--entry-registry nil
+  "A ref to the entry registry of a site being exported.")
+
 (defcustom org-roam-blog-local-sync-command "rsync -a --delete"
   "Shell command for local folder synchronization during site export."
   :group 'org-roam-blog

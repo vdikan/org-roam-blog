@@ -76,11 +76,12 @@ nodes are missing `org-roam-blog-default-date-property' property
 (defun org-roam-blog--entry-context-default (node)
   "Default NODE to context hash-table processor."
   (ht ("title" (org-roam-node-title node))
-      ("main"  (org-roam-blog--htmlize-node-content node))))
+      ("main"  (org-roam-blog--preprocess-node-content
+                (org-roam-blog--htmlize-node-content node)))))
 
-(defun org-roam-blog--entry-fname-default (context)
-  "Default filename builder for CONTEXT object."
-  (->> (ht-get context "title")
+(defun org-roam-blog--entry-fname-default (node)
+  "Default filename builder for entry NODE object."
+  (->> (org-roam-node-title node)
        (org-roam-blog-slugify)
        (format "%s.html")))
 
@@ -200,8 +201,12 @@ Set in \"context-fn\" field by default."
 
 (defsubst org-roam-blog--build-entry-context-list (index)
   "Prototype function to get a list of entry contexts for INDEX publishing."
-  (mapcar (org-roam-blog-index-entry-context-fn index)
-          (flatten-list (org-roam-blog--index-entry-list index))))
+  ;; (mapcar (org-roam-blog-index-entry-context-fn index)
+  ;;         (flatten-list (org-roam-blog--index-entry-list index)))
+  (cl-loop for node in (flatten-list (org-roam-blog--index-entry-list index))
+           collect (list node (funcall
+                               (org-roam-blog-index-entry-context-fn index)
+                               node))))
 
 (defsubst org-roam-blog--subdir-for-index (index)
   "Return relative subdirectory for entry outputs for the INDEX
@@ -214,11 +219,9 @@ inside the staging directory."
 (defsubst org-roam-blog--relative-entry-url (node index)
   "Output relative entry url path for an entry defined by NODE and
 an INDEX, implying that this INDEX is a leading one for the NODE."
-  (let* ((context
-          (funcall (org-roam-blog-index-entry-context-fn index) node))
-         (fname
-          (funcall (org-roam-blog-index-entry-fname-fn index) context))
-         (subdir (org-roam-blog--subdir-for-index index)))
+  (let ((fname
+         (funcall (org-roam-blog-index-entry-fname-fn index) node))
+        (subdir (org-roam-blog--subdir-for-index index)))
     (string-trim (concat "/" subdir "/" fname))))
 
 ;;;; Footer

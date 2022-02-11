@@ -72,6 +72,35 @@ package, removes extra hyphens, coerces result to lowercase."
         it org-roam-blog-html-fn-property)
        (when it (intern it))))
 
+(defun org-roam-blog--preprocess-node-content (text)
+  (labels ((link-replace ()
+             (if-let ((id-link (org-element-map (org-element-parse-buffer) 'link
+                                 (lambda (link)
+                                   (when (string= (org-element-property :type link) "id")
+                                     (list
+                                      (org-element-property :path link)
+                                      (org-element-property :begin link)
+                                      (org-element-property :end link)
+                                      (org-element-property :contents-begin link)
+                                      (org-element-property :contents-end link))))
+                                 nil t)))
+                 (if-let ((index (ht-get -orb--entry-registry (first id-link))))
+                     (setf (buffer-substring (second id-link) (third id-link))
+                           (format "[[%s][%s]]"
+                                   (org-roam-blog--relative-entry-url
+                                    (org-roam-node-from-id (first id-link))
+                                    index)
+                                   (buffer-substring (fourth id-link) (fifth id-link))))
+                   (setf (buffer-substring (second id-link) (third id-link))
+                         (format "[[%s][%s]]" (first id-link)
+                                 (buffer-substring (fourth id-link) (fifth id-link))))))))
+    (with-temp-buffer
+      (insert text)
+      (let ((links-to-go t))
+        (while links-to-go
+          (setf links-to-go (link-replace))))
+      (buffer-string))))
+
 (defun org-roam-blog--content-start ()
   (if (re-search-forward
         org-roam-blog-outline-content-start-regexp nil 'move)
@@ -104,7 +133,9 @@ package, removes extra hyphens, coerces result to lowercase."
            (f-expand raw-content-filename
                       (f-dirname (org-roam-node-file node))))
           (buffer-string))
-      (funcall htmlizer (org-roam-blog--get-node-content node)))))
+      (funcall htmlizer
+               (org-roam-blog--preprocess-node-content
+                (org-roam-blog--get-node-content node))))))
 
 (defsubst org-roam-blog--drop-main-tag (s)
   "Remove <main> tag from orgize-produced html."

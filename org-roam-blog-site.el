@@ -147,11 +147,11 @@ defined by KWARGS for the specified SITE."
                       (entry-dir (org-roam-blog-index-entry-dir index)))
                  (concat index-slug "/" entry-dir)
                index-slug)))
-        (cl-loop for context in entry-context-list
+        (cl-loop for (node context) in entry-context-list
               ;;FIXME: capture counters through `org-roam-blog--build-entry-context-list'
               ;; for counter from 1 to (length entry-context-list)
               do (org-roam-blog-stage
-                  (funcall (org-roam-blog-index-entry-fname-fn index) context)
+                  (funcall (org-roam-blog-index-entry-fname-fn index) node)
                   site template context subdir)))
     (block no-entry-pages-output
       (when (null (org-roam-blog-index-entry-template index))
@@ -192,10 +192,11 @@ to also clean up orphans from the final `org-roam-blog-site-staging-dir'."
   ;; generate global entry registry for the site
   (org-roam-blog-site--process-registry site)
   ;; output indexes contents for the site
-  (cl-loop for index in (ht-values (org-roam-blog-site-index-ht site))
-           do (block stage-index
-                (message "staging index %s" (org-roam-blog-index-title index))
-                (org-roam-blog-site--stage-index site index)))
+  (let ((-orb--entry-registry (org-roam-blog-site-entry-registry site))) ; a bit of a hack here
+    (cl-loop for index in (ht-values (org-roam-blog-site-index-ht site))
+             do (block stage-index
+                  (message "staging index %s" (org-roam-blog-index-title index))
+                  (org-roam-blog-site--stage-index site index))))
   ;; sync with the staging directory
   (unless (f-exists? (org-roam-blog-site-staging-dir site))
     (f-mkdir (org-roam-blog-site-staging-dir site)))
