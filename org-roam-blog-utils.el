@@ -72,7 +72,7 @@ package, removes extra hyphens, coerces result to lowercase."
         it org-roam-blog-html-fn-property)
        (when it (intern it))))
 
-(defun org-roam-blog--preprocess-node-content (text)
+(defun org-roam-blog--prepr-replace-node-links (text)
   (labels ((link-replace ()
              (if-let ((id-link (org-element-map (org-element-parse-buffer) 'link
                                  (lambda (link)
@@ -100,6 +100,29 @@ package, removes extra hyphens, coerces result to lowercase."
         (while links-to-go
           (setf links-to-go (link-replace))))
       (buffer-string))))
+
+(defun org-roam-blog--prepr-filter-noexport (text)
+  (labels
+      ((-filter-noexport
+        () (let ((p (point)))
+             (setf p (re-search-forward "^*" nil t))
+             (when p
+               (goto-char p)
+               (when (member "noexport" (org-get-tags))
+                 (org-cut-subtree)))
+             p)))
+    (with-temp-buffer
+      (insert text)
+      (goto-char (point-min))
+      (let ((scan (point)))
+        (while (not (null scan))
+          (setf scan (-filter-noexport))))
+      (buffer-string))))
+
+(defun org-roam-blog--preprocess-node-content (text)
+  (-> text
+    (org-roam-blog--prepr-filter-noexport)
+    (org-roam-blog--prepr-replace-node-links)))
 
 (defun org-roam-blog--content-start ()
   (if (re-search-forward
