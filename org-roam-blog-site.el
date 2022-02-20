@@ -9,18 +9,18 @@
 
 (defun org-roam-blog--content-wrap-default (site template context)
   "Default content wrapper for ORB SITE. Renders CONTENT in TEMPLATE
-placed between `wrapper-top` and `wrapper-bottom` mustache partials.
-They must exist inside `src-template-dir' of the SITE.
-Returns a closure with a signature expected by `mustache-render' for
-\"wrapper\" tags."
+  placed between `wrapper-top` and `wrapper-bottom` mustache partials.
+  They must exist inside `src-template-dir' of the SITE.
+  Returns a closure with a signature expected by `mustache-render' for
+  \"wrapper\" tags."
   (let ((template-dirlist
          (list (org-roam-blog-site-src-template-dir site))))
     (lambda (template context)
-      (concat (let ((mustache-partial-paths template-dirlist))
-                (mustache-render "{{> wrapper-top}}" context))
-              (mustache-render template context)
-              (let ((mustache-partial-paths template-dirlist))
-                (mustache-render "{{> wrapper-bottom}}" context))))))
+      (let ((mustache-partial-paths template-dirlist))
+        (concat
+         (mustache-render "{{> wrapper-top}}" context)
+         (mustache-render template context)
+         (mustache-render "{{> wrapper-bottom}}" context))))))
 
 
 (defun org-roam-blog--render-default (site template context)

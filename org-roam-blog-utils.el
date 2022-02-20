@@ -72,6 +72,20 @@ package, removes extra hyphens, coerces result to lowercase."
         it org-roam-blog-html-fn-property)
        (when it (intern it))))
 
+(defsubst org-roam-node--lead-index-for (node-id)
+ (ht-get -orb--entry-registry node-id))
+
+(defsubst org-roam-blog--backlinks-to-context (node)
+  "Extract backlinks for a context of the NODE."
+  (let* ((backlinks (org-roam-backlinks-get node))
+         (backnodes (mapcar #'org-roam-backlink-source-node backlinks)))
+    (cl-loop for bn in backnodes
+             for lead-index = (org-roam-node--lead-index-for (org-roam-node-id bn))
+             when lead-index  ; process those back-linked entries that are on this site as well
+             collect (ht ("title" (org-roam-node-title bn))
+                         ("link" (org-roam-blog--relative-entry-url
+                                  bn lead-index))))))
+
 (defun org-roam-blog--prepr-replace-node-links (text)
   (labels ((link-replace ()
              (if-let ((id-link (org-element-map (org-element-parse-buffer) 'link
@@ -84,7 +98,7 @@ package, removes extra hyphens, coerces result to lowercase."
                                       (org-element-property :contents-begin link)
                                       (org-element-property :contents-end link))))
                                  nil t)))
-                 (if-let ((index (ht-get -orb--entry-registry (first id-link))))
+                 (if-let ((index (org-roam-node--lead-index-for (first id-link))))
                      (setf (buffer-substring (second id-link) (third id-link))
                            (format "[[%s][%s]]"
                                    (org-roam-blog--relative-entry-url
