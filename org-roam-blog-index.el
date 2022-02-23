@@ -75,10 +75,14 @@ nodes are missing `org-roam-blog-default-date-property' property
 
 (defun org-roam-blog--entry-context-default (node)
   "Default NODE to context hash-table processor."
-  (let ((backlinks (org-roam-blog--backlinks-to-context node)))
+  (let ((backlinks (org-roam-blog--backlinks-to-context node))
+        (tags (mapcar (lambda (tag) (ht ("tag" tag)))
+                      (org-roam-node-tags node))))
     (ht ("title" (org-roam-node-title node))
         ("show-backlinks" (when backlinks t))
         ("backlinks" backlinks)
+        ("tags" tags)
+        ("show-tags" (when tags t))
         ("main"
          (org-roam-blog--preprocess-node-content
           (org-roam-blog--htmlize-node-content node))))))
