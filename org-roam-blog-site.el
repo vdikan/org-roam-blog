@@ -88,16 +88,6 @@ the output of particular pages/sections of the SITE through calls to
     (f-write-text (org-roam-blog-render site template context)
                   'utf-8 scratch-path)))
 
-(defsubst org-roam-blog-entry-pathname (index context)
-  (let ((fname
-         (funcall (org-roam-blog-index-entry-fname-fn index) context))
-        (subdir
-         (if-let ((index-slug (org-roam-blog-index-slug index))
-                  (entry-dir (org-roam-blog-index-entry-dir index)))
-             (concat index-slug "/" entry-dir)
-           index-slug)))
-    (f-expand fname subdir)))
-
 (defsubst org-roam-blog-register-index (site index)
     "Register INDEX in the index-ht of the SITE,
 using slug of the INDEX as key."
@@ -113,20 +103,22 @@ defined by KWARGS for the specified SITE."
     `(let ((,index (org-roam-blog-index-create ,@kwargs)))
        (org-roam-blog-register-index ,site ,index))))
 
-(defsubst org-roam-blog-site--stage-index (site index)
+(defsubst org-roam-blog-site--stage-index-groups (site index &optional entry-list)
+  "Stage the grouped preview pages (feeds) for the INDEX of a SITE.
+ENTRY-LIST may come optionally pre-built."
   (if (and (org-roam-blog-index-template index)
            (org-roam-blog-index-context-fn index))
       (let ((template (org-roam-blog-index-template index))
             (context (funcall
                       (org-roam-blog-index-context-fn index)
-                      index))
+                      index entry-list))
             (subdir (org-roam-blog-index-slug index)))
         (cl-loop for context-group in context
-              do (org-roam-blog-stage
-                  (format "%s-%s.html"
-                          org-roam-blog-index-filename-prefix
-                          (ht-get context-group "page"))
-                  site template context-group subdir))
+                 do (org-roam-blog-stage
+                     (format "%s-%s.html"
+                             org-roam-blog-index-filename-prefix
+                             (ht-get context-group "page"))
+                     site template context-group subdir))
         ;;FIXME: symlink for the first "index" output?:
         (org-roam-blog-stage (format "%s.html" org-roam-blog-index-filename-prefix)
                              site template (car context) subdir))
@@ -136,23 +128,26 @@ defined by KWARGS for the specified SITE."
                  (org-roam-blog-index-title index)))
       (when (null (org-roam-blog-index-context-fn index))
         (message "no context-fn defined for %s"
-                 (org-roam-blog-index-title index)))))
-  ;;FIXME: Only for prototyping: it builds the entry list to conext twice!
+                 (org-roam-blog-index-title index))))))
+
+(defsubst org-roam-blog-site--stage-index-entries (site index &optional entry-list)
+  "Stage the individual entry pages the INDEX of a SITE.
+ENTRY-LIST may come optionally pre-built."
   (if (and (org-roam-blog-index-entry-template index)
            (org-roam-blog-index-entry-context-fn index))
       (let ((template (org-roam-blog-index-entry-template index))
-            (entry-context-list (org-roam-blog--build-entry-context-list index))
-            (subdir  ;;FIXME: ectract this if-let, it reappears in `org-roam-blog-entry-pathname'
+            (entry-context-list (org-roam-blog--build-entry-context-list index entry-list))
+            (subdir ;;FIXME: ectract this if-let, it reappears in `org-roam-blog-entry-pathname'
              (if-let ((index-slug (org-roam-blog-index-slug index))
                       (entry-dir (org-roam-blog-index-entry-dir index)))
                  (concat index-slug "/" entry-dir)
                index-slug)))
         (cl-loop for (node context) in entry-context-list
-              ;;FIXME: capture counters through `org-roam-blog--build-entry-context-list'
-              ;; for counter from 1 to (length entry-context-list)
-              do (org-roam-blog-stage
-                  (funcall (org-roam-blog-index-entry-fname-fn index) node)
-                  site template context subdir)))
+                 ;;FIXME: capture counters through `org-roam-blog--build-entry-context-list'
+                 ;; for counter from 1 to (length entry-context-list)
+                 do (org-roam-blog-stage
+                     (funcall (org-roam-blog-index-entry-fname-fn index) node)
+                     site template context subdir)))
     (block no-entry-pages-output
       (when (null (org-roam-blog-index-entry-template index))
         (message "no entry-template defined in %s"
@@ -160,6 +155,13 @@ defined by KWARGS for the specified SITE."
       (when (null (org-roam-blog-index-entry-context-fn index))
         (message "no entry-context-fn defined in %s"
                  (org-roam-blog-index-title index))))))
+
+(defsubst org-roam-blog-site--stage-index (site index)
+  "Stage the INDEX of a SITE: process the feed view for entry groups
+and individual page for each entry within an INDEX."
+  (let ((entry-list (org-roam-blog--index-entry-list index)))
+    (org-roam-blog-site--stage-index-groups  site index entry-list)
+    (org-roam-blog-site--stage-index-entries site index entry-list)))
 
 (defsubst org-roam-blog-site--process-registry (site)
   "Make all individual entry Id's point to their lead index

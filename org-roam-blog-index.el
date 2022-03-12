@@ -188,14 +188,15 @@ via :ENTRY-OFFSET keyword property."
         (list nodes)
       (seq-partition nodes group-by))))
 
-(defun org-roam-blog--index-context-default (index)
+(defsubst org-roam-blog--index-context-default (index &optional entry-list)
   "Sample constructor of a context for INDEX.
-Set in \"context-fn\" field by default."
+Set in \"context-fn\" field by default.
+Optionally accepts pre-built ENTRY-LIST."
   (let* ((title (org-roam-blog-index-title index))
          (slug  (org-roam-blog-index-slug index))
          (entry-dir  (org-roam-blog-index-entry-dir index))
          (media-dir  (org-roam-blog-index-media-dir index))
-         (entry-list (org-roam-blog--index-entry-list index))
+         (entry-list (or entry-list (org-roam-blog--index-entry-list index)))
          (page-max (length entry-list)))
     (cl-loop for page-num from 1
              for entry-group in entry-list
@@ -207,14 +208,14 @@ Set in \"context-fn\" field by default."
                          ("page" page-num)
                          ("page-max" page-max)))))
 
-(defsubst org-roam-blog--build-entry-context-list (index)
-  "Prototype function to get a list of entry contexts for INDEX publishing."
-  ;; (mapcar (org-roam-blog-index-entry-context-fn index)
-  ;;         (flatten-list (org-roam-blog--index-entry-list index)))
-  (cl-loop for node in (flatten-list (org-roam-blog--index-entry-list index))
-           collect (list node (funcall
-                               (org-roam-blog-index-entry-context-fn index)
-                               node))))
+(defsubst org-roam-blog--build-entry-context-list (index &optional entry-list)
+    "Prototype function to get a list of entry contexts for INDEX publishing.
+Optionally accepts pre-built grouped ENTRY-LIST, meant be flattened."
+    (cl-loop for node in (flatten-list
+                          (or entry-list
+                              (org-roam-blog--index-entry-list index)))
+             collect (list node
+                           (funcall (org-roam-blog-index-entry-context-fn index) node))))
 
 (defsubst org-roam-blog--subdir-for-index (index)
   "Return relative subdirectory for entry outputs for the INDEX
