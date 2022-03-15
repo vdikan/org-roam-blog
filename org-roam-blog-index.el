@@ -75,14 +75,20 @@ nodes are missing `org-roam-blog-default-date-property' property
 
 (defun org-roam-blog--entry-context-default (node)
   "Default NODE to context hash-table processor."
-  (let ((backlinks (org-roam-blog--backlinks-to-context node))
+  (let ((lead-index (org-roam-node--lead-index-for (org-roam-node-id node)))
+        (backlinks (org-roam-blog--backlinks-to-context node))
+        (date (cdr (assoc org-roam-blog-default-date-property
+                          (org-roam-node-properties node))))
         (tags (mapcar (lambda (tag) (ht ("tag" tag)))
                       (org-roam-node-tags node))))
     (ht ("title" (org-roam-node-title node))
-        ("show-backlinks" (when backlinks t))
         ("backlinks" backlinks)
+        ("show-backlinks" (when backlinks t))
+        ("date" date)
+        ("show-date" (when date t))
         ("tags" tags)
         ("show-tags" (when tags t))
+        ("self-url" (org-roam-blog--relative-entry-url node lead-index))
         ("main"
          (org-roam-blog--preprocess-node-content
           (org-roam-blog--htmlize-node-content node))))))
@@ -200,13 +206,16 @@ Optionally accepts pre-built ENTRY-LIST."
          (page-max (length entry-list)))
     (cl-loop for page-num from 1
              for entry-group in entry-list
-             collect (ht ("title" title)
-                         ("slug" slug)
-                         ("entry-dir" entry-dir)
-                         ("media-dir" media-dir)
-                         ("entries" entry-group)
-                         ("page" page-num)
-                         ("page-max" page-max)))))
+             collect (let ((entry-group
+                            (mapcar (org-roam-blog-index-entry-context-fn index)
+                                    entry-group)))
+                       (ht ("title" title)
+                           ("slug" slug)
+                           ("entry-dir" entry-dir)
+                           ("media-dir" media-dir)
+                           ("entries" entry-group)
+                           ("page" page-num)
+                           ("page-max" page-max))))))
 
 (defsubst org-roam-blog--build-entry-context-list (index &optional entry-list)
     "Prototype function to get a list of entry contexts for INDEX publishing.

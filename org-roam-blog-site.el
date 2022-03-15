@@ -119,7 +119,6 @@ ENTRY-LIST may come optionally pre-built."
                              org-roam-blog-index-filename-prefix
                              (ht-get context-group "page"))
                      site template context-group subdir))
-        ;;FIXME: symlink for the first "index" output?:
         (org-roam-blog-stage (format "%s.html" org-roam-blog-index-filename-prefix)
                              site template (car context) subdir))
     (block no-index-page-output
@@ -137,7 +136,7 @@ ENTRY-LIST may come optionally pre-built."
            (org-roam-blog-index-entry-context-fn index))
       (let ((template (org-roam-blog-index-entry-template index))
             (entry-context-list (org-roam-blog--build-entry-context-list index entry-list))
-            (subdir ;;FIXME: ectract this if-let, it reappears in `org-roam-blog-entry-pathname'
+            (subdir
              (if-let ((index-slug (org-roam-blog-index-slug index))
                       (entry-dir (org-roam-blog-index-entry-dir index)))
                  (concat index-slug "/" entry-dir)
