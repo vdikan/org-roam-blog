@@ -208,14 +208,33 @@ Optionally accepts pre-built ENTRY-LIST."
              for entry-group in entry-list
              collect (let ((entry-group
                             (mapcar (org-roam-blog-index-entry-context-fn index)
-                                    entry-group)))
+                                    entry-group))
+                           (prev-page
+                            (if (> page-num 1)
+                              (format "/%s/%s-%s.html"
+                                      slug
+                                      org-roam-blog-index-filename-prefix
+                                      (1- page-num))
+
+                              ""))      ; must result in a string to render in mustache
+                           (next-page
+                            (if (< page-num page-max)
+                              (format "/%s/%s-%s.html"
+                                      slug
+                                      org-roam-blog-index-filename-prefix
+                                      (1+ page-num))
+                              "")))     ; must result in a string to render in mustache
                        (ht ("title" title)
                            ("slug" slug)
                            ("entry-dir" entry-dir)
                            ("media-dir" media-dir)
                            ("entries" entry-group)
                            ("page" page-num)
-                           ("page-max" page-max))))))
+                           ("page-max" page-max)
+                           ("prev-page" prev-page)
+                           ("has-prev-page" (not (string-empty-p prev-page)))
+                           ("next-page" next-page)
+                           ("has-next-page" (not (string-empty-p next-page))))))))
 
 (defsubst org-roam-blog--build-entry-context-list (index &optional entry-list)
     "Prototype function to get a list of entry contexts for INDEX publishing.

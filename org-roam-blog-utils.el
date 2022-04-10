@@ -87,27 +87,27 @@ package, removes extra hyphens, coerces result to lowercase."
                                   bn lead-index))))))
 
 (defun org-roam-blog--prepr-replace-node-links (text)
-  (labels ((link-replace ()
-             (if-let ((id-link (org-element-map (org-element-parse-buffer) 'link
-                                 (lambda (link)
-                                   (when (string= (org-element-property :type link) "id")
-                                     (list
-                                      (org-element-property :path link)
-                                      (org-element-property :begin link)
-                                      (org-element-property :end link)
-                                      (org-element-property :contents-begin link)
-                                      (org-element-property :contents-end link))))
-                                 nil t)))
-                 (if-let ((index (org-roam-node--lead-index-for (first id-link))))
-                     (setf (buffer-substring (second id-link) (third id-link))
-                           (format "[[%s][%s]]"
-                                   (org-roam-blog--relative-entry-url
-                                    (org-roam-node-from-id (first id-link))
-                                    index)
-                                   (buffer-substring (fourth id-link) (fifth id-link))))
-                   (setf (buffer-substring (second id-link) (third id-link))
-                         (format "[[%s][%s]]" (first id-link)
-                                 (buffer-substring (fourth id-link) (fifth id-link))))))))
+  (cl-labels ((link-replace ()
+                (if-let ((id-link (org-element-map (org-element-parse-buffer) 'link
+                                    (lambda (link)
+                                      (when (string= (org-element-property :type link) "id")
+                                        (list
+                                         (org-element-property :path link)
+                                         (org-element-property :begin link)
+                                         (org-element-property :end link)
+                                         (org-element-property :contents-begin link)
+                                         (org-element-property :contents-end link))))
+                                    nil t)))
+                    (if-let ((index (org-roam-node--lead-index-for (first id-link))))
+                        (setf (buffer-substring (second id-link) (third id-link))
+                              (format "[[%s][%s]]"
+                                      (org-roam-blog--relative-entry-url
+                                       (org-roam-node-from-id (first id-link))
+                                       index)
+                                      (buffer-substring (fourth id-link) (fifth id-link))))
+                      (setf (buffer-substring (second id-link) (third id-link))
+                            (format "[[%s][%s]]" (first id-link)
+                                    (buffer-substring (fourth id-link) (fifth id-link))))))))
     (with-temp-buffer
       (insert text)
       (let ((links-to-go t))
@@ -116,7 +116,7 @@ package, removes extra hyphens, coerces result to lowercase."
       (buffer-string))))
 
 (defun org-roam-blog--prepr-filter-noexport (text)
-  (labels
+  (cl-labels
       ((-filter-noexport
         () (let ((p (point)))
              (setf p (re-search-forward "^*" nil t))
