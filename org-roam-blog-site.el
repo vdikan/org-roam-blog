@@ -182,6 +182,10 @@ in the SITE's `entry-registry' hash table field."
   "Main staging routine for a SITE. I'm using intermediate scratch temporary
 directory and rsync (default for `org-roam-blog-local-sync-command'), in order
 to also clean up orphans from the final `org-roam-blog-site-staging-dir'."
+  ;; update global context with the stamp of generation time
+  (ht-set! (org-roam-blog-site-top-context site)
+           "top-gen-timestamp"
+           (format-time-string "%Y-%m-%d %H:%M"))
   ;; create and prepopulate scratch dir
   (setf (org-roam-blog-site-scratch-dir site)
         (make-temp-file "orb-" t))

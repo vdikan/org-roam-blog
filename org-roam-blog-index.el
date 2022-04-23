@@ -82,6 +82,7 @@ nodes are missing `org-roam-blog-default-date-property' property
         (tags (mapcar (lambda (tag) (ht ("tag" tag)))
                       (org-roam-node-tags node))))
     (ht ("title" (org-roam-node-title node))
+        ("lead-index-title" (org-roam-blog-index-title lead-index))
         ("backlinks" backlinks)
         ("show-backlinks" (when backlinks t))
         ("date" date)
