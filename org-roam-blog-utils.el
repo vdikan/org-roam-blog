@@ -13,6 +13,20 @@
        (assoc property it)
        (cdr it)))
 
+(defun org-roam-node-find-noselect (node &optional force)
+  "Navigate to the point for NODE, and return the buffer.
+If NODE is already visited, this won't automatically move the
+point to the beginning of the NODE, unless FORCE is non-nil."
+  (unless (org-roam-node-file node)
+    (user-error "Node does not have corresponding file"))
+  (let ((buf (find-file-noselect (org-roam-node-file node))))
+    (with-current-buffer buf
+      (when (or force
+                (not (equal (org-roam-node-id node)
+                            (org-roam-id-at-point))))
+        (goto-char (org-roam-node-point node))))
+    buf))
+
 (defun org-roam-blog--current-dir ()
   "Get the absolute path of the current directory."
   (expand-file-name
@@ -59,7 +73,7 @@ package, removes extra hyphens, coerces result to lowercase."
 ;; Loads my testing dynamic module:
 (load-rs-module "my_org_dynmod")
 
-;; that priovides `my-org-dynmod/org-to-html'
+;; that provides `my-org-dynmod/org-to-html'
 
 (defsubst org-roam-blog--org-to-html (s)
   (funcall #'my-org-dynmod/org-to-html s))
