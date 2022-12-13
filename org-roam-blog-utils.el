@@ -135,6 +135,24 @@ package, removes extra hyphens, coerces result to lowercase."
                                 (org-roam-blog-slugify (caar hl))
                                 (cdr hl)))))))))
 
+(defun org-roam-blog--prepr-filter-noexport (text)
+  (cl-labels
+      ((-filter-noexport
+        () (let ((p (point)))
+             (setf p (re-search-forward "^*" nil t))
+             (when p
+               (goto-char p)
+               (when (member "noexport" (org-get-tags))
+                 (org-cut-subtree)))
+             p)))
+    (with-temp-buffer
+      (insert text)
+      (goto-char (point-min))
+      (let ((scan (point)))
+        (while (not (null scan))
+          (setf scan (-filter-noexport))))
+      (buffer-string))))
+
 (defun org-roam-blog--prepr-replace-node-links (text)
     (cl-labels ((keep-trailing-space
                  (point)
@@ -210,24 +228,6 @@ package, removes extra hyphens, coerces result to lowercase."
           (while links-to-go
             (setf links-to-go (link-replace))))
         (buffer-string)))))
-
-(defun org-roam-blog--prepr-filter-noexport (text)
-  (cl-labels
-      ((-filter-noexport
-        () (let ((p (point)))
-             (setf p (re-search-forward "^*" nil t))
-             (when p
-               (goto-char p)
-               (when (member "noexport" (org-get-tags))
-                 (org-cut-subtree)))
-             p)))
-    (with-temp-buffer
-      (insert text)
-      (goto-char (point-min))
-      (let ((scan (point)))
-        (while (not (null scan))
-          (setf scan (-filter-noexport))))
-      (buffer-string))))
 
 (defun org-roam-blog--prepr-prepend-anchor-links (text node)
     (let ((idx 0))
