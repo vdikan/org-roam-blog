@@ -102,6 +102,39 @@ package, removes extra hyphens, coerces result to lowercase."
                                    bn lead-index))))
      (remove-duplicates :test #'ht-equal?))))
 
+(defun org-roam-blog--toc-to-context (node req-level)
+  (let* ((lead-index (org-roam-node--lead-index-for
+                      (org-roam-node-id node)))
+         (urlprefix (org-roam-blog--relative-entry-url node lead-index))
+         (headlines
+          (with-temp-buffer
+            (insert (org-roam-blog--prepr-filter-noexport
+                     (org-roam-blog--get-node-content node)))
+            (org-element-map (org-element-parse-buffer) 'headline
+              (lambda (headline)
+                (let ((title (org-element-property :raw-value headline))
+                      (level (org-element-property :level headline))
+                      (begin (org-element-property :begin headline)))
+                  (when
+                      (and
+                       (string-match
+                        org-roam-blog-sure-headline-regex
+                        (progn (goto-char begin) (thing-at-point 'line t)))
+                       (not
+                        (string-match org-roam-blog-anchor-regex title))) 
+                    (cons title level))))))))
+    (->> (cl-loop for hl in headlines
+                  for i from 1
+                  collect (cons hl i))
+         (remove-if-not (lambda (hl) (>= req-level (cdar hl))))
+         (mapcar (lambda (hl)
+                   (ht ("title" (caar hl))
+                       ("link"
+                        (format "%s#%s-%s"
+                                urlprefix
+                                (org-roam-blog-slugify (caar hl))
+                                (cdr hl)))))))))
+
 (defun org-roam-blog--prepr-replace-node-links (text)
     (cl-labels ((keep-trailing-space
                  (point)
@@ -135,6 +168,49 @@ package, removes extra hyphens, coerces result to lowercase."
             (setf links-to-go (link-replace))))
         (buffer-string))))
 
+(defun org-roam-blog--prepr-media-links (text node)
+  (let* ((index  (org-roam-node--lead-index-for
+                  (org-roam-node-id node)))
+         (destdir (org-roam-blog-site-scratch-dir -orb--site))
+         (destdir (f-expand (org-roam-blog-index-slug index) destdir))
+         (destdir (f-expand (org-roam-blog-index-media-dir index) destdir))
+         (urlprefix (concat "/" (org-roam-blog-index-slug index)
+                            "/" (org-roam-blog-index-media-dir index))))
+    (unless (f-exists-p destdir)
+      (f-mkdir-full-path destdir))
+    (cl-labels
+        ((link-replace
+          ()
+          (if-let ((file-link
+                    (org-element-map (org-element-parse-buffer) 'link
+                      (lambda (link)
+                        (when (string= (org-element-property :type link) "file")
+                          (list
+                           (org-element-property :path link)
+                           (org-element-property :begin link)
+                           (org-element-property :end link))))
+                      nil t)))
+              (cl-destructuring-bind (path begin end) file-link
+                (let ((path-orig
+                       (f-expand path (f-dirname (org-roam-node-file node))))
+                      (path-dest
+                       (f-expand (f-filename path) destdir))
+                      (urlpath (concat urlprefix "/" (f-filename path))))
+                  (when (f-exists? path-orig)
+                    (unless (f-exists? path-dest) (f-copy path-orig path-dest))
+                    (if (member (downcase (f-ext path)) org-roam-blog-media-image-extensions)
+                        (setf (buffer-substring begin end)
+                              (format org-roam-blog-media-image-inline-format-string
+                                      urlpath))
+                      (setf (buffer-substring begin end)
+                            (format "[[%s][%s]]" urlpath (f-filename path))))))))))
+      (with-temp-buffer
+        (insert text)
+        (let ((links-to-go t))
+          (while links-to-go
+            (setf links-to-go (link-replace))))
+        (buffer-string)))))
+
 (defun org-roam-blog--prepr-filter-noexport (text)
   (cl-labels
       ((-filter-noexport
@@ -153,10 +229,56 @@ package, removes extra hyphens, coerces result to lowercase."
           (setf scan (-filter-noexport))))
       (buffer-string))))
 
-(defun org-roam-blog--preprocess-node-content (text)
+(defun org-roam-blog--prepr-prepend-anchor-links (text node)
+    (let ((idx 0))
+      (cl-labels
+          ((to-id (title idx)
+                  (format org-roam-blog-anchor-id-format
+                          (org-roam-blog-slugify title)
+                          idx))
+           (to-anchor (title idx)
+                      (format org-roam-blog-anchor-format
+                              (org-roam-blog-slugify title)
+                              idx))                                 
+           (prepend-anchor-link
+            ()
+            (if-let ((headline
+                      (org-element-map (org-element-parse-buffer) 'headline
+                        (lambda (headline)
+                          (let ((title (org-element-property :raw-value headline))
+                                (level (org-element-property :level headline))
+                                (begin (org-element-property :begin headline)))
+                            (when
+                                (and
+                                 (string-match
+                                  org-roam-blog-sure-headline-regex
+                                  (progn (goto-char begin) (thing-at-point 'line t)))
+                                 (not
+                                  (string-match org-roam-blog-anchor-regex title))) 
+                                (list title level begin))))
+                        nil t)))
+                (cl-destructuring-bind (title level begin) headline
+                  (cl-incf idx)
+                  (let* ((anchor (to-anchor title idx))
+                         (id (to-id title idx)))
+                    (setf (buffer-substring (+ begin level) (+ begin level))
+                          anchor)
+                    (setf (buffer-substring begin begin)
+                          (format "#+begin_export html\n<a id=\"%s\"></a>\n#+end_export\n"
+                                  id)))))))
+        (with-temp-buffer
+          (insert text)
+          (let ((headlines-to-go t))
+            (while headlines-to-go
+              (setf headlines-to-go (prepend-anchor-link))))
+          (buffer-string)))))
+
+(defun org-roam-blog--preprocess-node-content (text node)
   (-> text
     (org-roam-blog--prepr-filter-noexport)
-    (org-roam-blog--prepr-replace-node-links)))
+    (org-roam-blog--prepr-media-links node)
+    (org-roam-blog--prepr-replace-node-links)
+    (org-roam-blog--prepr-prepend-anchor-links node)))
 
 (defun org-roam-blog--content-start ()
   (if (re-search-forward
@@ -192,7 +314,7 @@ package, removes extra hyphens, coerces result to lowercase."
           (buffer-string))
       (funcall htmlizer
                (org-roam-blog--preprocess-node-content
-                (org-roam-blog--get-node-content node))))))
+                (org-roam-blog--get-node-content node) node)))))
 
 (defsubst org-roam-blog--drop-main-tag (s)
   "Remove <main> tag from orgize-produced html."

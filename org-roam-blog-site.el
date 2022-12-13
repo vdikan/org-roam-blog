@@ -178,7 +178,7 @@ in the SITE's `entry-registry' hash table field."
              do (ht-set! (org-roam-blog-site-entry-registry site)
                          (org-roam-node-id node) index)))))))
 
-(defsubst org-roam-blog-stage-site (site)
+(defsubst org-roam-blog-stage-site (site) ; TODO: &optional index
   "Main staging routine for a SITE. I'm using intermediate scratch temporary
 directory and rsync (default for `org-roam-blog-local-sync-command'), in order
 to also clean up orphans from the final `org-roam-blog-site-staging-dir'."
@@ -197,7 +197,8 @@ to also clean up orphans from the final `org-roam-blog-site-staging-dir'."
   ;; generate global entry registry for the site
   (org-roam-blog-site--process-registry site)
   ;; output indexes contents for the site
-  (let ((-orb--entry-registry (org-roam-blog-site-entry-registry site))) ; a bit of a hack here
+  (let ((-orb--entry-registry (org-roam-blog-site-entry-registry site)) ;FIXME
+        (-orb--site site))              ; a bit of a hack here
     (cl-loop for index in (ht-values (org-roam-blog-site-index-ht site))
              do (block stage-index
                   (message "staging index %s" (org-roam-blog-index-title index))

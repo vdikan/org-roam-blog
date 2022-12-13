@@ -75,24 +75,28 @@ nodes are missing `org-roam-blog-default-date-property' property
 
 (defun org-roam-blog--entry-context-default (node)
   "Default NODE to context hash-table processor."
-  (let ((lead-index (org-roam-node--lead-index-for (org-roam-node-id node)))
-        (backlinks (org-roam-blog--backlinks-to-context node))
-        (date (cdr (assoc org-roam-blog-default-date-property
+  (let* ((lead-index (org-roam-node--lead-index-for (org-roam-node-id node)))
+         (backlinks (org-roam-blog--backlinks-to-context node))
+         (date (cdr (assoc org-roam-blog-default-date-property
                           (org-roam-node-properties node))))
-        (tags (mapcar (lambda (tag) (ht ("tag" tag)))
-                      (org-roam-node-tags node))))
+         (tags (mapcar (lambda (tag) (ht ("tag" tag)))
+                      (org-roam-node-tags node)))
+         (toclevel (cdr (assoc org-roam-blog-toc-level-property
+                         (org-roam-node-properties node))))
+         (toc (when toclevel (org-roam-blog--toc-to-context
+                              node (string-to-number toclevel)))))
     (ht ("title" (org-roam-node-title node))
         ("lead-index-title" (org-roam-blog-index-title lead-index))
         ("backlinks" backlinks)
         ("show-backlinks" (when backlinks t))
+        ("toc" toc)
+        ("show-toc" (when toc t))
         ("date" date)
         ("show-date" (when date t))
         ("tags" tags)
         ("show-tags" (when tags t))
         ("self-url" (org-roam-blog--relative-entry-url node lead-index))
-        ("main"
-         (org-roam-blog--preprocess-node-content
-          (org-roam-blog--htmlize-node-content node))))))
+        ("main" (org-roam-blog--htmlize-node-content node)))))
 
 (defun org-roam-blog--entry-fname-default (node)
   "Default filename builder for entry NODE object."
