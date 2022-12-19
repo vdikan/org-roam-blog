@@ -179,41 +179,47 @@ in the SITE's `entry-registry' hash table field."
                          (org-roam-node-id node) index)))))))
 
 (defsubst org-roam-blog-stage-site (site) ; TODO: &optional index
-  "Main staging routine for a SITE. I'm using intermediate scratch temporary
-directory and rsync (default for `org-roam-blog-local-sync-command'), in order
-to also clean up orphans from the final `org-roam-blog-site-staging-dir'."
-  ;; update global context with the stamp of generation time
-  (ht-set! (org-roam-blog-site-top-context site)
-           "top-gen-timestamp"
-           (format-time-string "%Y-%m-%d %H:%M"))
-  ;; create and prepopulate scratch dir
-  (setf (org-roam-blog-site-scratch-dir site)
-        (make-temp-file "orb-" t))
-  (shell-command
-   (format "%s %s %s"
-           org-roam-blog-local-sync-command
-           (fname-with-tslash (org-roam-blog-site-src-root-dir site))
-           (fname-no-tslash (org-roam-blog-site-scratch-dir site))))
-  ;; generate global entry registry for the site
-  (org-roam-blog-site--process-registry site)
-  ;; output indexes contents for the site
-  (let ((-orb--entry-registry (org-roam-blog-site-entry-registry site)) ;FIXME
-        (-orb--site site))              ; a bit of a hack here
+    "Main staging routine for a SITE. I'm using intermediate scratch temporary
+  directory and rsync (default for `org-roam-blog-local-sync-command'), in order
+  to also clean up orphans from the final `org-roam-blog-site-staging-dir'."
+    ;; update global context with the stamp of generation time
+    (ht-set! (org-roam-blog-site-top-context site)
+             "top-gen-timestamp"
+             (format-time-string "%Y-%m-%d %H:%M"))
+    ;; create and prepopulate scratch dir
+    (setf (org-roam-blog-site-scratch-dir site)
+          (make-temp-file "orb-" t))
+    (shell-command
+     (format "%s %s %s"
+             org-roam-blog-local-sync-command
+             (fname-with-tslash (org-roam-blog-site-src-root-dir site))
+             (fname-no-tslash (org-roam-blog-site-scratch-dir site))))
+    ;; generate global entry registry for the site
+    (org-roam-blog-site--process-registry site)
+
+    ;; set global context
+    (org-roam-blog-g-entries-set (org-roam-blog-site-entry-registry site))
+    (org-roam-blog-g-site-set site)              
+
+    ;; output indexes contents for the site
     (cl-loop for index in (ht-values (org-roam-blog-site-index-ht site))
              do (block stage-index
                   (message "staging index %s" (org-roam-blog-index-title index))
-                  (org-roam-blog-site--stage-index site index))))
-  ;; sync with the staging directory
-  (unless (f-exists? (org-roam-blog-site-staging-dir site))
-    (f-mkdir (org-roam-blog-site-staging-dir site)))
-  (shell-command
-   (format "%s %s %s"
-           org-roam-blog-local-sync-command
-           (fname-with-tslash (org-roam-blog-site-scratch-dir site))
-           (fname-no-tslash (org-roam-blog-site-staging-dir site))))
-  ;; erase the intermediate scratch dir
-  (f-delete (org-roam-blog-site-scratch-dir site) t)
-  (setf (org-roam-blog-site-scratch-dir site) nil))
+                  (org-roam-blog-site--stage-index site index)))
+
+    ;; reset global context
+    (org-roam-blog-g-reset)
+    ;; sync with the staging directory
+    (unless (f-exists? (org-roam-blog-site-staging-dir site))
+      (f-mkdir (org-roam-blog-site-staging-dir site)))
+    (shell-command
+     (format "%s %s %s"
+             org-roam-blog-local-sync-command
+             (fname-with-tslash (org-roam-blog-site-scratch-dir site))
+             (fname-no-tslash (org-roam-blog-site-staging-dir site))))
+    ;; erase the intermediate scratch dir
+    (f-delete (org-roam-blog-site-scratch-dir site) t)
+    (setf (org-roam-blog-site-scratch-dir site) nil))
 
 (defsubst org-roam-blog-start-preview (site)
   "Start `emacs-web-server' instance to serve the SITE staging directory content."

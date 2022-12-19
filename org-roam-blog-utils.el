@@ -87,7 +87,7 @@ package, removes extra hyphens, coerces result to lowercase."
        (when it (intern it))))
 
 (defsubst org-roam-node--lead-index-for (node-id)
- (ht-get -orb--entry-registry node-id))
+ (ht-get (org-roam-blog-g-entries-get) node-id))
 
 (defsubst org-roam-blog--backlinks-to-context (node)
   "Extract backlinks for a context of the NODE."
@@ -189,7 +189,7 @@ package, removes extra hyphens, coerces result to lowercase."
 (defun org-roam-blog--prepr-media-links (text node)
   (let* ((index  (org-roam-node--lead-index-for
                   (org-roam-node-id node)))
-         (destdir (org-roam-blog-site-scratch-dir -orb--site))
+         (destdir (org-roam-blog-site-scratch-dir (org-roam-blog-g-site-get)))
          (destdir (f-expand (org-roam-blog-index-slug index) destdir))
          (destdir (f-expand (org-roam-blog-index-media-dir index) destdir))
          (urlprefix (concat "/" (org-roam-blog-index-slug index)

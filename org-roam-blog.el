@@ -4,11 +4,47 @@
 (require 'org-roam-blog-index)
 (require 'org-roam-blog-site)
 
-(defvar -orb--site nil
-  "Global context object for meta of a site being exported.")
+;; FIXME: this seems redundant. I can use the `site' instance for
+;; global context, just carrying a global var pointing to it.
+(cl-defstruct (org-roam-blog-global-context
+               (:constructor org-roam-blog-global-context--create)
+               (:copier nil))
+  "Structure of `org-roam-blog-g' global context object for a
+website being staged in the runtime."
+  (site nil)
+  (entry-registry nil))
 
-(defvar -orb--entry-registry nil
-  "A ref to the entry registry of a site being exported.")
+
+(defvar org-roam-blog-g (org-roam-blog-global-context--create)
+  "Global context object for a website being processed.")
+
+
+(defsubst org-roam-blog-g-site-get ()
+  "Get the website instance from the global context."
+  (org-roam-blog-global-context-site org-roam-blog-g))
+
+
+(defsubst org-roam-blog-g-site-set (obj)
+  "Set the website instance from the global context to OBJ."
+  (setf (org-roam-blog-global-context-site org-roam-blog-g)
+        obj))
+
+
+(defsubst org-roam-blog-g-entries-get ()
+  "Get the website entry registry from the global context."
+  (org-roam-blog-global-context-entry-registry org-roam-blog-g))
+
+
+(defsubst org-roam-blog-g-entries-set (obj)
+  "Set the website entry registry from the global context to OBJ."
+  (setf (org-roam-blog-global-context-entry-registry org-roam-blog-g)
+        obj))
+
+
+(defsubst org-roam-blog-g-reset ()
+  "Erases the Org Roam Blog global context."
+  (org-roam-blog-g-site-set nil)
+  (org-roam-blog-g-entries-set nil))
 
 (defcustom org-roam-blog-local-sync-command "rsync -a --delete"
   "Shell command for local folder synchronization during site export."
