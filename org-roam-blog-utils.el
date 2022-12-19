@@ -195,7 +195,9 @@ package, removes extra hyphens, coerces result to lowercase."
          (urlprefix (concat "/" (org-roam-blog-index-slug index)
                             "/" (org-roam-blog-index-media-dir index))))
     (unless (f-exists-p destdir)
-      (f-mkdir-full-path destdir))
+      ;; FIXME: some setups have outdated f.el:
+      ;; (f-mkdir-full-path destdir)
+      (shell-command (format "mkdir -p %s" destdir)))
     (cl-labels
         ((link-replace
           ()
