@@ -121,7 +121,7 @@ ENTRY-LIST may come optionally pre-built."
                      site template context-group subdir))
         (org-roam-blog-stage (format "%s.html" org-roam-blog-index-filename-prefix)
                              site template (car context) subdir))
-    (block no-index-page-output
+    (cl-block no-index-page-output
       (when (null (org-roam-blog-index-template index))
         (message "no template defined for %s"
                  (org-roam-blog-index-title index)))
@@ -147,7 +147,7 @@ ENTRY-LIST may come optionally pre-built."
                  do (org-roam-blog-stage
                      (funcall (org-roam-blog-index-entry-fname-fn index) node)
                      site template context subdir)))
-    (block no-entry-pages-output
+    (cl-block no-entry-pages-output
       (when (null (org-roam-blog-index-entry-template index))
         (message "no entry-template defined in %s"
                  (org-roam-blog-index-title index)))
@@ -168,7 +168,7 @@ in the SITE's `entry-registry' hash table field."
   (cl-loop
    for index in (ht-values (org-roam-blog-site-index-ht site))
    do (when (org-roam-blog-index-leading index)
-        (block process-registry
+        (cl-block process-registry
           (message "processing %s into global entry registry"
                    (org-roam-blog-index-title index))
           (let ((nodelist
@@ -203,7 +203,7 @@ in the SITE's `entry-registry' hash table field."
 
     ;; output indexes contents for the site
     (cl-loop for index in (ht-values (org-roam-blog-site-index-ht site))
-             do (block stage-index
+             do (cl-block stage-index
                   (message "staging index %s" (org-roam-blog-index-title index))
                   (org-roam-blog-site--stage-index site index)))
 
