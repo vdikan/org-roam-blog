@@ -3,7 +3,8 @@
 ;; Copyright (C) 2023  Vladimir Dikan
 
 ;; Author: Vladimir Dikan <vdikan@vivaldi.net>
-;; Keywords: extensions, tools
+;; Version: 0.0.1
+;; Keywords: org-mode, org-roam, blog, extensions, tools
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -93,11 +94,6 @@ package, removes extra hyphens, coerces result to lowercase."
       (replace-regexp-in-string (car item) (cdr item)  accum))
     '(("--+" . "-") ("^-"  . "") ("-$"  . ""))
     (unidecode-sanitize string))))
-
-;; Loads my testing dynamic module:
-(load-rs-module "my_org_dynmod")
-
-;; that provides `my-org-dynmod/org-to-html'
 
 (defsubst org-roam-blog--org-to-html (s)
   (funcall #'my-org-dynmod/org-to-html s))

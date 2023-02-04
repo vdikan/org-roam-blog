@@ -3,7 +3,8 @@
 ;; Copyright (C) 2023  Vladimir Dikan
 
 ;; Author: Vladimir Dikan <vdikan@vivaldi.net>
-;; Keywords: extensions, tools
+;; Version: 0.0.1
+;; Keywords: org-mode, org-roam, blog, extensions, tools
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -156,6 +157,23 @@ website being staged in the runtime."
   "Regex used to find the beginning of node's content."
   :group 'org-roam-blog
   :type 'string)
+
+(defcustom org-roam-blog-dynmod-arch "x86_64"
+  "Specifies architecture for which the rust dynamic module was built."
+  :group 'org-roam-blog
+  :type 'string)
+
+;; Base path for the package
+(defconst org-roam-blog-base (file-name-directory load-file-name))
+
+;; the following loads my experimental Rust dynamic module:
+(defun org-roam-blog-load-dynamic-module ()
+  (module-load
+   (expand-file-name (format "orb_dynmod_%s.so"
+                             org-roam-blog-dynmod-arch)
+                     org-roam-blog-base)))
+;; a call of that function `my-org-dynmod/org-to-html' for
+;; `org-roam-blog-utils'
 
 ;;;; Footer
 

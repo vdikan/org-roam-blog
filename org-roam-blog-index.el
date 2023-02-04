@@ -3,7 +3,8 @@
 ;; Copyright (C) 2023  Vladimir Dikan
 
 ;; Author: Vladimir Dikan <vdikan@vivaldi.net>
-;; Keywords: extensions, tools
+;; Version: 0.0.1
+;; Keywords: org-mode, org-roam, blog, extensions, tools
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
