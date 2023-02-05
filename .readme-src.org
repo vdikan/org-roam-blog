@@ -2,7 +2,7 @@
 
 * Org-Roam-Blog
 
-A static site publishing facility for *Emacs Org-Roam*.
+A static site publishing facility for *Emacs [[https://www.orgroam.com][Org-Roam]]*.
 
 Meant to be /declaratively/ configured and not necessarily replicate
 the file structure of org-mode files on export. Relies on Emacs Rust
@@ -11,8 +11,7 @@ dynamic module for preprocessing the contents of the exported nodes
 features in the future).
 
 Alpha stage. Highly experimental, with known flaws. However, already
-used to populate {{{base-url}}}/ - my personal blog, where one can
-find:
+used to populate my homepage at {{{base-url}}}/ where one can find:
 
  * site configuration example at {{{base-url}}}/siegetower-blueprints/siegetower-blog-setup
  * general design idea at {{{base-url}}}/dev/essence-of-the-tower

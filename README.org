@@ -1,11 +1,11 @@
-# Created 2023-02-05 Sun 01:26
+# Created 2023-02-05 Sun 01:33
 #+title: 
 #+author: Vladimir Dikan
 #+macro: base-url https://siegetower.pages.dev
 
 * Org-Roam-Blog
 
-A static site publishing facility for *Emacs Org-Roam*.
+A static site publishing facility for *Emacs [[https://www.orgroam.com][Org-Roam]]*.
 
 Meant to be /declaratively/ configured and not necessarily replicate
 the file structure of org-mode files on export. Relies on Emacs Rust
@@ -14,8 +14,7 @@ dynamic module for preprocessing the contents of the exported nodes
 features in the future).
 
 Alpha stage. Highly experimental, with known flaws. However, already
-used to populate https://siegetower.pages.dev/ - my personal blog, where one can
-find:
+used to populate my homepage at https://siegetower.pages.dev/ where one can find:
 
 - site configuration example at https://siegetower.pages.dev/siegetower-blueprints/siegetower-blog-setup
 - general design idea at https://siegetower.pages.dev/dev/essence-of-the-tower
