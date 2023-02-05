@@ -1,0 +1,43 @@
+# Created 2023-02-05 Sun 01:26
+#+title: 
+#+author: Vladimir Dikan
+#+macro: base-url https://siegetower.pages.dev
+
+* Org-Roam-Blog
+
+A static site publishing facility for *Emacs Org-Roam*.
+
+Meant to be /declaratively/ configured and not necessarily replicate
+the file structure of org-mode files on export. Relies on Emacs Rust
+dynamic module for preprocessing the contents of the exported nodes
+(quite trivial caller to the ~orgize~ crate, but may incorpotate other
+features in the future).
+
+Alpha stage. Highly experimental, with known flaws. However, already
+used to populate https://siegetower.pages.dev/ - my personal blog, where one can
+find:
+
+- site configuration example at https://siegetower.pages.dev/siegetower-blueprints/siegetower-blog-setup
+- general design idea at https://siegetower.pages.dev/dev/essence-of-the-tower
+- this package source code in a literate programming style, at https://siegetower.pages.dev/orbs-engine/org-roam-blog-engine-package
+
+
+At the moment those waypoints serve as documentation.
+
+
+** Installation
+
+In case you want to try the *org-roam-blog* at its current shape and
+form, download the repo, add it to your emacs' load path and activate
+with ~use-package~:
+
+#+begin_src elisp
+  (use-package org-roam-blog              ; load blogware engine
+     :ensure nil
+     :load-path "/path/to/local/org-roam-blog.el")             
+  (org-roam-blog-load-dynamic-module)     ; load the rust dynamic module
+#+end_src
+
+When there is variation among pre-built dynamic modules for different
+architectures, the right flavor should be selected through customizing
+~org-roam-blog-dynmod-arch~.
