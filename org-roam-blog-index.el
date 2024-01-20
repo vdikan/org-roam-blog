@@ -129,6 +129,21 @@ nodes are missing `org-roam-blog-default-date-property' property
        (org-roam-blog-slugify)
        (format "%s.html")))
 
+(defsubst org-roam-blog--entry-fname-with-date (node)
+  "Alternative filename builder NODE object that prepends the entry date."
+  (cl-labels
+      ((datestring-to-slug-part
+        (datestring)
+        (let ((date (org-roam-blog-to-calendar-date datestring)))
+          (cl-destructuring-bind (month day year) date
+            (format "%4d-%02d-%02d-" year month day)))))
+    (let ((datestring
+           (cdr (assoc org-roam-blog-default-date-property
+                       (org-roam-node-properties node)))))
+      (concatenate 'string
+                   (datestring-to-slug-part datestring)
+                   (org-roam-blog--entry-fname-default node)))))
+
 (cl-defstruct (org-roam-blog-index (:constructor org-roam-blog-index--create)
                                    (:copier nil))
   (root-spec        nil  :type org-roam-blog-index-root-spec-type)
