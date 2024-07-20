@@ -139,12 +139,14 @@ website being staged in the runtime."
 
 (defcustom org-roam-blog-sure-headline-regex "^*+[ ]+"
   "Regex used to ensure the headline is true and not just a bold text
-  (that would not include interna whitespace)."
+  (that would not include internal whitespace)."
+  ;; NOTE: still buggy.
+  ;; Parsing in `org-roam-blog--toc-to-context' breaks on lines that start with bold text.
   :group 'org-roam-blog
   :type 'string)
 
 (defvar org-roam-blog-anchor-id-format "%s-%s"
-  "title-idx. Just to be sure it is unnified.")
+  "title-idx. Just to be sure it is unified.")
 
 
 (defcustom org-roam-blog-anchor-format
