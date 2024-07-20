@@ -131,7 +131,7 @@ website being staged in the runtime."
   :group 'org-roam-blog
   :type  'string)
 
-(defcustom org-roam-blog-anchor-regex "\\[\\[#[0-9a-zA-Z-]+\\]\\[¶\\]\\]"
+(defcustom org-roam-blog-anchor-regex "\\[\\[#[0-9a-zA-Z-]+\\]\\[§\\]\\]"
   "Regex used to find anchor link in a title of a headline."
   :group 'org-roam-blog
   :type 'string)
@@ -148,7 +148,7 @@ website being staged in the runtime."
 
 
 (defcustom org-roam-blog-anchor-format
-  (format " [[#%s][¶]]" org-roam-blog-anchor-id-format)
+  (format " [[#%s][§]]" org-roam-blog-anchor-id-format)
   "Default formatter for the heading anchor."
   :group 'org-roam-blog
   :type 'string)
